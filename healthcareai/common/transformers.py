@@ -402,11 +402,28 @@ class DataFrameImputerRandomForest( TransformerMixin ):
         
         """
         for col in list( X.columns ):
+            
+            # If there is no null values in the column, skip current iteration
+            if ( X[ col ].isnull().values.any()==False):
+               continue
+            
+            # if column type is already categorical, raise exception
+            if ( X[col].dtype == np.dtype('O') or pd.api.types.is_categorical_dtype(X[col]) ):
+                raise HealthcareAIError("Column type of '{}' is already categorical, but it is mentioned in numeric_columns_as_categorical={}".format(col, self.numeric_columns_as_categorical) )
+             
+            
             imputeValue = X[col].value_counts().index[0]
             imputeData = np.array( object=[ imputeValue for i in range( X[col].isna().sum() ) ], dtype=np.int64 )
             
             self.fill_dict[col] = imputeData
             X[col].fillna( value=imputeValue, inplace=True )
+            
+            if self.verbose:
+                print( "Column name               = ", col )
+                print( "Total no of mising values = ", len(imputeData))
+                print( "Top 10 predictions of missing values = ", imputeData[0:10] )
+                print("------------------------------------------------------------------------------------------------")
+        
         
         return X
                 
